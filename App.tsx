@@ -8,7 +8,7 @@ import SchoolView from './components/SchoolView';
 import ReportsView from './components/ReportsView';
 import ExpensesView from './components/ExpensesView';
 import ConfirmationModal from './components/ConfirmationModal';
-import { AlertCircle, CloudOff, CloudCheck, RefreshCw, UploadCloud, Database } from 'lucide-react';
+import { AlertCircle, CloudOff, CloudCheck, RefreshCw, UploadCloud, Menu, X } from 'lucide-react';
 
 const App: React.FC = () => {
   const [schools, setSchools] = useState<School[]>([]);
@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [activeView, setActiveView] = useState<AppView>('dashboard');
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
@@ -50,11 +51,7 @@ const App: React.FC = () => {
 
         if (e1 || e2 || e3 || e4) {
           const msg = e1?.message || e2?.message || e3?.message || e4?.message;
-          if (msg?.includes("relation") && msg?.includes("does not exist")) {
-            setDbError("Tablolar Bulunamadı: Supabase panelinden tabloları oluşturmanız gerekiyor.");
-          } else {
-            setDbError(`Veritabanı Hatası: ${msg}`);
-          }
+          setDbError(`Veritabanı Hatası: ${msg}`);
           throw new Error(msg);
         }
 
@@ -85,7 +82,6 @@ const App: React.FC = () => {
     fetchData();
   }, []);
 
-  // Yerel veriyi buluta taşıma fonksiyonu
   const migrateToCloud = async () => {
     if (!supabase) return;
     setRefreshing(true);
@@ -95,6 +91,7 @@ const App: React.FC = () => {
       if (payments.length > 0) await supabase.from('payments').upsert(payments);
       if (expenses.length > 0) await supabase.from('expenses').upsert(expenses);
       alert("Tebrikler! Yerel verileriniz başarıyla buluta taşındı.");
+      localStorage.removeItem('schools'); // Taşındıktan sonra temizle
       fetchData();
     } catch (err: any) {
       alert("Taşıma hatası: " + err.message);
@@ -116,7 +113,7 @@ const App: React.FC = () => {
     setConfirmState({
       isOpen: true,
       title: 'Okulu Sil',
-      message: `Bu okulu ve tüm verilerini silmek istediğinize emin misiniz?`,
+      message: `Bu okulu silmek istediğinize emin misiniz?`,
       confirmText: 'Evet, Sil',
       type: 'danger',
       onConfirm: async () => {
@@ -179,7 +176,7 @@ const App: React.FC = () => {
       title: 'Gideri Sil',
       confirmText: 'Sil',
       type: 'danger',
-      message: 'Bu harcama kaydını silmek istediğinize emin misiniz?',
+      message: 'Bu kaydı silmek istediğinize emin misiniz?',
       onConfirm: async () => {
         if (isSupabaseConfigured && supabase) {
           await supabase.from('expenses').delete().eq('id', id);
@@ -213,91 +210,112 @@ const App: React.FC = () => {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-center">
+      <div className="text-center p-6">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="font-bold text-slate-600">Sistem Hazırlanıyor...</p>
+        <p className="font-bold text-slate-600">ANKA TURİZM Yükleniyor...</p>
       </div>
     </div>
   );
 
+  const handleNavigate = (view: AppView, id?: string) => {
+    setActiveView(view);
+    if (id) setSelectedSchoolId(id);
+    setIsSidebarOpen(false); // Mobil menüyü kapat
+  };
+
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden">
+      {/* Sidebar - Desktop'ta sabit, Mobilde overlay */}
       <Sidebar 
         schools={schools} 
         activeView={activeView} 
         selectedSchoolId={selectedSchoolId}
-        onNavigate={(view, id) => { setActiveView(view); if (id) setSelectedSchoolId(id); }}
+        isSidebarOpen={isSidebarOpen}
+        onNavigate={handleNavigate}
         onAddSchool={addSchool}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
-      <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative">
-        {dbError && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-2xl flex items-center gap-3 animate-bounce">
-            <AlertCircle size={20} />
-            <span className="font-bold text-sm">{dbError}</span>
-          </div>
-        )}
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Header - Mobil Uyumlu */}
+        <header className="bg-white border-b border-slate-200 px-4 py-3 lg:px-8 lg:py-6 flex flex-col gap-3 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Mobil Menü Butonu */}
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                <Menu size={24} />
+              </button>
 
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+              <div>
+                <div className="flex items-center gap-2">
+                   <h1 className="text-lg lg:text-2xl font-bold text-slate-800 uppercase tracking-tight truncate max-w-[150px] lg:max-w-none">
+                    {activeView === 'dashboard' ? 'Genel Bakış' : activeView === 'reports' ? 'Raporlar' : activeView === 'expenses' ? 'Giderler' : selectedSchool?.name}
+                  </h1>
+                  {isSupabaseConfigured && !dbError ? (
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-[9px] lg:text-[10px] font-black rounded-full uppercase border border-green-200 whitespace-nowrap">
+                       <CloudCheck size={10} className="hidden sm:block" /> Bulut
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] lg:text-[10px] font-black rounded-full uppercase border border-amber-200 whitespace-nowrap">
+                       <CloudOff size={10} className="hidden sm:block" /> Yerel
+                    </div>
+                  )}
+                </div>
+                <p className="hidden lg:block text-slate-500 text-sm">Anka Turizm Servis Takip Sistemi</p>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
-               <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-tight">
-                {activeView === 'dashboard' ? 'Genel Bakış' : activeView === 'reports' ? 'Finansal Raporlar' : activeView === 'expenses' ? 'Gider Yönetimi' : selectedSchool?.name}
-              </h1>
-              {isSupabaseConfigured && !dbError ? (
-                <div className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase shadow-sm border border-green-200">
-                   <CloudCheck size={12} /> Bulut Aktif
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full uppercase shadow-sm border border-amber-200">
-                   <CloudOff size={12} /> Çevrimdışı Mod
-                </div>
+              {isSupabaseConfigured && !dbError && localStorage.getItem('schools') && (
+                <button 
+                  onClick={migrateToCloud}
+                  className="p-2 lg:p-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl lg:rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                >
+                  <UploadCloud size={18} />
+                </button>
+              )}
+              {isSupabaseConfigured && (
+                <button 
+                  onClick={() => fetchData(true)} 
+                  disabled={refreshing}
+                  className="p-2 lg:p-3 bg-white border border-slate-200 rounded-xl lg:rounded-2xl text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all flex items-center gap-2 text-sm font-bold shadow-sm"
+                >
+                  <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+                  <span className="hidden lg:inline">{refreshing ? 'Güncelleniyor...' : 'Senkronize Et'}</span>
+                </button>
               )}
             </div>
-            <p className="text-slate-500 text-sm">Anka Turizm Profesyonel Servis Takip Sistemi</p>
           </div>
           
-          <div className="flex items-center gap-2">
-            {/* Eğer LocalStorage'da veri varsa ve bulut aktifse taşıma butonu göster */}
-            {isSupabaseConfigured && !dbError && localStorage.getItem('schools') && (
-              <button 
-                onClick={migrateToCloud}
-                className="p-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-2xl hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 text-sm font-bold shadow-sm"
-                title="Cihazdaki verileri buluta yükle"
-              >
-                <UploadCloud size={18} />
-                <span>Buluta Taşı</span>
-              </button>
-            )}
-
-            {isSupabaseConfigured && (
-              <button 
-                onClick={() => fetchData(true)} 
-                disabled={refreshing}
-                className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all flex items-center gap-2 text-sm font-bold shadow-sm"
-              >
-                <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-                <span>{refreshing ? 'Güncelleniyor...' : 'Senkronize Et'}</span>
-              </button>
-            )}
-          </div>
+          {dbError && (
+            <div className="p-3 bg-red-100 border border-red-200 text-red-700 rounded-xl flex items-center gap-2 text-xs lg:text-sm font-bold">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{dbError}</span>
+            </div>
+          )}
         </header>
 
-        {activeView === 'dashboard' && (
-          <Dashboard 
-            schools={schools} 
-            students={students} 
-            payments={payments} 
-            expenses={expenses}
-            onSchoolClick={(id) => { setSelectedSchoolId(id); setActiveView('school-detail'); }} 
-            onDeleteSchool={deleteSchool}
-          />
-        )}
-        {activeView === 'reports' && <ReportsView schools={schools} students={students} payments={payments} expenses={expenses} />}
-        {activeView === 'expenses' && <ExpensesView expenses={expenses} onAdd={addExpense} onDelete={deleteExpense} />}
-        {activeView === 'school-detail' && selectedSchool && (
-          <SchoolView school={selectedSchool} students={students.filter(s => s.schoolId === selectedSchoolId)} payments={payments} onAddStudent={addStudent} onUpdateStudent={updateStudent} onDeleteStudent={deleteStudent} onTogglePayment={togglePayment} />
-        )}
+        {/* View İçeriği - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 lg:p-8">
+          {activeView === 'dashboard' && (
+            <Dashboard 
+              schools={schools} 
+              students={students} 
+              payments={payments} 
+              expenses={expenses}
+              onSchoolClick={(id) => { setSelectedSchoolId(id); setActiveView('school-detail'); }} 
+              onDeleteSchool={deleteSchool}
+            />
+          )}
+          {activeView === 'reports' && <ReportsView schools={schools} students={students} payments={payments} expenses={expenses} />}
+          {activeView === 'expenses' && <ExpensesView expenses={expenses} onAdd={addExpense} onDelete={deleteExpense} />}
+          {activeView === 'school-detail' && selectedSchool && (
+            <SchoolView school={selectedSchool} students={students.filter(s => s.schoolId === selectedSchoolId)} payments={payments} onAddStudent={addStudent} onUpdateStudent={updateStudent} onDeleteStudent={deleteStudent} onTogglePayment={togglePayment} />
+          )}
+        </div>
       </main>
 
       <ConfirmationModal isOpen={confirmState.isOpen} title={confirmState.title} message={confirmState.message} confirmText={confirmState.confirmText} type={confirmState.type} onConfirm={confirmState.onConfirm} onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))} />

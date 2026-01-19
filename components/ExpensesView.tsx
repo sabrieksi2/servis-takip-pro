@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Expense } from '../types';
-import { Plus, Trash2, Fuel, Wrench, Shield, FileText, MoreHorizontal, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Fuel, Wrench, Shield, FileText, MoreHorizontal, Calendar, DollarSign, X } from 'lucide-react';
 
 interface ExpensesViewProps {
   expenses: Expense[];
@@ -43,21 +43,21 @@ const ExpensesView: React.FC<ExpensesViewProps> = ({ expenses, onAdd, onDelete }
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
-      <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+    <div className="space-y-4 lg:space-y-6 animate-in slide-in-from-bottom duration-500 pb-20">
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white p-4 lg:p-6 rounded-[24px] lg:rounded-[32px] border border-slate-100 shadow-sm gap-4">
         <div className="flex items-center gap-4">
-          <div className="bg-amber-500 p-3 rounded-2xl text-white shadow-lg shadow-amber-100">
-            <DollarSign size={24} />
+          <div className="bg-amber-500 p-2.5 lg:p-3 rounded-xl lg:rounded-2xl text-white shadow-lg shadow-amber-100 shrink-0">
+            <DollarSign size={22} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-800">Gider Kayıtları</h2>
-            <p className="text-sm text-slate-500">Servis masraflarını buradan takip et.</p>
+            <h2 className="text-base lg:text-xl font-black text-slate-800 uppercase tracking-tight">Gider Yönetimi</h2>
+            <p className="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-widest">Harcama Takibi</p>
           </div>
         </div>
         {!isAdding && (
           <button 
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold hover:bg-black transition-all shadow-xl"
+            className="flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-sm hover:bg-black transition-all shadow-xl"
           >
             <Plus size={20} />
             <span>Gider Ekle</span>
@@ -66,89 +66,94 @@ const ExpensesView: React.FC<ExpensesViewProps> = ({ expenses, onAdd, onDelete }
       </div>
 
       {isAdding && (
-        <div className="bg-white p-6 rounded-3xl border-2 border-slate-900 shadow-2xl animate-in zoom-in-95 duration-300">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase">Kategori</label>
-              <select 
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value as any})}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none"
-              >
-                {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-              </select>
+        <div className="bg-white p-5 lg:p-8 rounded-[28px] lg:rounded-[36px] border-2 border-slate-900 shadow-2xl animate-in zoom-in-95 duration-300 relative">
+          <button onClick={() => setIsAdding(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 p-2"><X size={20}/></button>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
+                <select 
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value as any})}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-sm lg:text-base"
+                >
+                  {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Açıklama</label>
+                <input 
+                  type="text" 
+                  placeholder="Shell yakıt alımı vb."
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-sm lg:text-base"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tutar (₺)</label>
+                <input 
+                  type="number" 
+                  placeholder="0"
+                  value={formData.amount || ''}
+                  onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-black text-sm lg:text-base"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase">Açıklama</label>
-              <input 
-                type="text" 
-                placeholder="Örn: Shell mazot alımı"
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase">Tutar (₺)</label>
-              <input 
-                type="number" 
-                placeholder="0.00"
-                value={formData.amount || ''}
-                onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none"
-              />
-            </div>
-            <div className="flex items-end gap-2">
-              <button type="submit" className="flex-1 bg-slate-900 text-white p-3 rounded-xl font-bold hover:bg-black transition-all">Kaydet</button>
-              <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold hover:bg-slate-200 transition-all">İptal</button>
+            <div className="flex gap-3 pt-2">
+              <button type="submit" className="flex-1 bg-slate-900 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-black transition-all">Kaydet</button>
+              <button type="button" onClick={() => setIsAdding(false)} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase text-sm hover:bg-slate-200 transition-all">İptal</button>
             </div>
           </form>
         </div>
       )}
 
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="p-4 text-xs font-bold text-slate-400 uppercase">Tarih</th>
-              <th className="p-4 text-xs font-bold text-slate-400 uppercase">Kategori</th>
-              <th className="p-4 text-xs font-bold text-slate-400 uppercase">Açıklama</th>
-              <th className="p-4 text-xs font-bold text-slate-400 uppercase text-right">Tutar</th>
-              <th className="p-4 text-xs font-bold text-slate-400 uppercase text-center">İşlem</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {expenses.length === 0 ? (
+      <div className="bg-white rounded-[24px] lg:rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[700px] lg:min-w-0">
+            <thead className="bg-slate-50">
               <tr>
-                <td colSpan={5} className="p-12 text-center text-slate-400 italic">Kayıtlı gider bulunmuyor.</td>
+                <th className="p-4 lg:p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tarih</th>
+                <th className="p-4 lg:p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</th>
+                <th className="p-4 lg:p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Açıklama</th>
+                <th className="p-4 lg:p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Tutar</th>
+                <th className="p-4 lg:p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">İşlem</th>
               </tr>
-            ) : (
-              expenses.map(expense => (
-                <tr key={expense.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 text-sm font-medium text-slate-600">
-                    <div className="flex items-center gap-2">
-                      <Calendar size={14} className="text-slate-400" />
-                      {new Date(expense.date).toLocaleDateString('tr-TR')}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">
-                      {CATEGORIES.find(c => c.name === expense.category)?.icon}
-                      {expense.category}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-slate-600">{expense.description || '-'}</td>
-                  <td className="p-4 text-right font-black text-red-600 text-sm">{expense.amount.toLocaleString()} ₺</td>
-                  <td className="p-4 text-center">
-                    <button onClick={() => onDelete(expense.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {expenses.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-12 text-center text-slate-400 font-medium italic text-sm">Gider kaydı bulunmuyor.</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                expenses.map(expense => (
+                  <tr key={expense.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-4 lg:p-5 text-xs lg:text-sm font-bold text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-slate-300" />
+                        {new Date(expense.date).toLocaleDateString('tr-TR')}
+                      </div>
+                    </td>
+                    <td className="p-4 lg:p-5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-[10px] font-black uppercase">
+                        {CATEGORIES.find(c => c.name === expense.category)?.icon}
+                        {expense.category}
+                      </span>
+                    </td>
+                    <td className="p-4 lg:p-5 text-xs lg:text-sm text-slate-600 font-medium truncate max-w-[150px]">{expense.description || '-'}</td>
+                    <td className="p-4 lg:p-5 text-right font-black text-red-600 text-sm lg:text-base">{expense.amount.toLocaleString()} ₺</td>
+                    <td className="p-4 lg:p-5 text-center">
+                      <button onClick={() => onDelete(expense.id)} className="p-2 text-slate-200 hover:text-red-500 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
